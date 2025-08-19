@@ -9,7 +9,9 @@ import { Request } from 'express';
 export class JwtStrategy extends PassportStrategy(Strategy){
   constructor(private readonly prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => req?.cookies?.['access_token'], // đọc từ cookie
+      ]),
       ignoreExpiration: false,
       secretOrKey: process.env.ACCESS_TOKEN_SECRET || 'secretKey'
     });

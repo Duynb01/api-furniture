@@ -21,7 +21,7 @@ export class AuthController {
     const ipAddress: string = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
     const userAgent = req.headers['user-agent'] || "Unknown"
     const {access_token, refresh_token, user } = await this.authService.login(dto, userAgent, ipAddress)
-    await this.saveToken(res, refresh_token);
+    await this.saveToken(res, access_token, refresh_token);
     return {
       status: 'success',
       message: 'Đăng nhập thành công',
@@ -35,7 +35,7 @@ export class AuthController {
     const ipAddress: string = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket?.remoteAddress || '';
     const userAgent:string = req.headers['user-agent'] || "Unknown"
     const {access_token, refresh_token, user } = await this.authService.googleLogin(token, userAgent, ipAddress)
-    await this.saveToken(res, refresh_token);
+    await this.saveToken(res, access_token, refresh_token);
     return {
       status: 'success',
       message: 'Đăng nhập thành công',
@@ -46,6 +46,7 @@ export class AuthController {
 
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token');
     res.clearCookie('refresh_token');
     return {
       status:'success',
@@ -65,7 +66,7 @@ export class AuthController {
     const ipAddress: string = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.socket?.remoteAddress || '';
     const userAgent:string = request.headers['user-agent'] || "Unknown";
     const {access_token, refresh_token} = await this.authService.refresh(refreshToken, userAgent, ipAddress);
-    await this.saveToken(response, refresh_token );
+    await this.saveToken(response, access_token, refresh_token);
     return { message: 'Successful', access_token };
   }
 
@@ -86,7 +87,13 @@ export class AuthController {
     return this.authService.verifyResetToken(token, email)
   }
 
-  private async saveToken(res: Response, refreshToken: string){
+  private async saveToken(res: Response, accessToken:string, refreshToken: string) {
+    res.cookie('access_token', accessToken, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: true,
@@ -94,4 +101,6 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 day
     });
   }
+
+
 }

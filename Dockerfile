@@ -63,5 +63,7 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start server và chạy migration nếu cần
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Fix đường dẫn main.js đúng với NestJS 14+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+
 

@@ -87,7 +87,7 @@ export class AuthController {
 
   private async saveToken(res: Response, accessToken:string, refreshToken: string){
     res.cookie('access_token', accessToken, {
-      httpOnly: true,
+      httpOnly: false,
       secure: true,
       sameSite: 'none',
       maxAge:  15 * 60 * 1000, // 15 minutes

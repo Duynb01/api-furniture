@@ -11,24 +11,29 @@
 #Base image (Deploy server)
 
 # -------------------------
+# -------------------------
 # Stage 1: Build
 # -------------------------
 FROM node:22-alpine AS builder
 
-# Set working directory
+# Cài thêm bash và openssl (Prisma cần trong một số trường hợp)
+RUN apk add --no-cache bash openssl
+
 WORKDIR /app
 
-# Copy package.json & package-lock.json
+# Copy package.json và package-lock.json trước → cache npm install
 COPY package*.json ./
 
-# Install all dependencies (dev + prod) để build
+# Cài dependencies
 RUN npm install
 
-# Copy toàn bộ source
+# Copy toàn bộ source code
 COPY . .
 
-# Build NestJS project
+# Sinh Prisma client
 RUN npx prisma generate
+
+# Build NestJS
 RUN npm run build
 
 # -------------------------
@@ -38,23 +43,25 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Chỉ copy package.json & package-lock.json
+# Copy chỉ production dependencies
 COPY package*.json ./
-
-# Cài chỉ production dependencies
 RUN npm install --production
 
-# Copy dist từ stage build
+# Copy thư mục dist từ builder
 COPY --from=builder /app/dist ./dist
 
-# Copy các file cần thiết khác (ví dụ prisma schema)
+# Copy Prisma client từ builder
 COPY --from=builder /app/prisma ./prisma
 
-# Expose port NestJS
-EXPOSE 3000
+# Copy node_modules từ builder để tránh thiếu dependency
+COPY --from=builder /app/node_modules ./node_modules
 
-# Env variable PORT để Render có thể override
+# Set port cho Render
 ENV PORT=3000
 
-# CMD: chạy server production
-CMD ["node", "dist/main.js"]
+# Expose port
+EXPOSE 3000
+
+# Start server và chạy migration nếu cần
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+

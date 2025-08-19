@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String
+  email    String  @unique
+  password String?
+  phone    String?
+  address  String?
+  roleId   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  cartItems CartItem[]
+  orders    Order[]
+  reviews   Review[]
+  vouchers  VoucherUser[]
+  passwordResetToken PasswordResetToken[]
+  refreshToken RefreshToken[]
+  role      Role          @relation(fields: [roleId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  userId    String @db.Uuid
+  expiresAt DateTime
+  createAt  DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  token      String   @unique
+  expiryDate DateTime
+  deviceName String
+  ipAddress    String
+  userId     String   @db.Uuid
+  createdAt   DateTime @default(now())
+  active     Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Voucher {
+  id         String       @id @default(uuid()) @db.Uuid
+  name       String
+  code       String       @unique
+  discount   Float
+  type       DiscountType
+  startDate   DateTime @default(now())
+  expiryDate DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  users VoucherUser[]
+}
+
+model VoucherUser {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  voucherId String @db.Uuid
+
+  used   Boolean   @default(false)
+  usedAt DateTime?
+
+  user    User    @relation(fields: [userId], references: [id])
+  voucher Voucher @relation(fields: [voucherId], references: [id])
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  users User[]
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  products Product[]
+}
+
+model Product {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  categoryId  Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  productImages ProductImage[]
+  reviews       Review[]
+
+  category      Category       @relation(fields: [categoryId], references: [id])
+
+}
+
+model ProductImage {
+  id        String @id @default(uuid()) @db.Uuid
+  url       String
+  productId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  product Product? @relation(fields: [productId], references: [id])
+}
+
+model CartItem {
+  id        String @id @default(uuid()) @db.Uuid
+  quantity  Int
+  userId    String @db.Uuid
+  productId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
+
+model Order {
+  id     String @id @default(uuid()) @db.Uuid
+  code   String @unique
+  status String
+  total  Float
+  voucherCode String?
+  userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items        OrderItem[]
+  shippingInfo ShippingInfo?
+  Payment      Payment?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ShippingInfo {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String
+  phone   String
+  address String
+  note    String?
+
+  orderId String @unique @db.Uuid
+  order   Order   @relation(fields: [orderId], references: [id])
+}
+
+model OrderItem {
+  id        String @id @default(uuid()) @db.Uuid
+  quantity  Int
+  price     Float
+  orderId   String @db.Uuid
+  productId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id            String    @id @default(uuid()) @db.Uuid
+  code          String    @unique
+  method        String
+  status        String
+  transactionId String?
+  amount        Float
+  paymentTime   DateTime?
+  orderId       String    @unique @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model Review {
+  id        String @id @default(uuid()) @db.Uuid
+  content   String
+  rating    Int
+  userId    String @db.Uuid
+  productId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}

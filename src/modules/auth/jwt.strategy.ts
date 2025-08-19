@@ -9,16 +9,7 @@ import { Request } from 'express';
 export class JwtStrategy extends PassportStrategy(Strategy){
   constructor(private readonly prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => {
-          // Lấy token từ header Authorization: Bearer <token>
-          const authHeader = req.headers['authorization'];
-          if (!authHeader) return null;
-          const parts = authHeader.split(' ');
-          if (parts.length !== 2 || parts[0] !== 'Bearer') return null;
-          return parts[1]; // token
-        },
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: process.env.ACCESS_TOKEN_SECRET || 'secretKey'
     });

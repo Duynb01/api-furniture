@@ -19,13 +19,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Copy package.json & package-lock.json
-COPY api/package*.json ./
+COPY package*.json ./
 
 # Install all dependencies (dev + prod) để build
 RUN npm install
 
 # Copy toàn bộ source
-COPY api/. .
+COPY . .
 
 # Build NestJS project
 RUN npx prisma generate
@@ -39,10 +39,10 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Chỉ copy package.json & package-lock.json
-COPY api/package*.json ./
+COPY package*.json ./
 
 # Cài chỉ production dependencies
-RUN npm install --omit=dev
+RUN npm install --production
 
 # Copy dist từ stage build
 COPY --from=builder /app/dist ./dist

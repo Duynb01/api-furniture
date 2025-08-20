@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { AddCartDto } from './dto/add-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -66,6 +66,16 @@ export class CartsService {
 
     if (!item || item.userId !== userId) {
       throw new NotFoundException('Không tìm thấy sản phẩm trong giỏ hàng');
+    }
+    const product = await this.prisma.product.findUnique({where: {id: item.productId}})
+
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm');
+    }
+
+    // Update lại Deploy
+    if(updateCartDto.quantity > product.stock){
+      throw new  ConflictException('Số lượng vượt quá số lượng sản phẩm');
     }
 
     return this.prisma.cartItem.update({

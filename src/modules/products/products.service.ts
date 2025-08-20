@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import {UpdateProductDto} from './dto/update-product.dto';
@@ -38,6 +38,45 @@ export class ProductsService {
 
   async findAll() {
     const products = await this.prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        stock: true,
+        description: true,
+        category: {
+          select: {
+            name: true
+          }
+        },
+        productImages: {
+          select: {
+            url: true
+          },
+          take: 1,
+        },
+        active: true
+      },
+    });
+    return products.map((product)=>{
+      return {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        stock: product.stock,
+        description: product.description,
+        category: product.category?.name || null,
+        url: product.productImages[0]?.url || null,
+        active: product.active
+      }
+    })
+  }
+
+  async findRoomStyle(categoryIds: number[]) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        categoryId: { in: categoryIds },
+      },
       select: {
         id: true,
         name: true,

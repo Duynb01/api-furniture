@@ -7,6 +7,13 @@ import { RolesGuard } from '../../common/roles.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+const ROOM_CATEGORY_MAP: Record<string, { ids: number[], name: string }> = {
+  'phong-khach': { ids: [1, 2, 3, 6], name: 'Phòng khách' },
+  'phong-ngu': { ids: [4, 5], name: 'Phòng ngủ' },
+  'phong-an-va-bep': { ids: [7], name: 'Phòng ăn & Bếp' },
+  'phong-lam-viec': { ids: [5, 6], name: 'Phòng làm việc' },
+};
+
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
@@ -24,6 +31,16 @@ export class ProductsController {
   @Get()
   findAll() {
     return this.productsService.findAll();
+  }
+
+  @Get(':slug/room')
+  async findRoomStyle(@Param('slug') slug: string) {
+    const room = ROOM_CATEGORY_MAP[slug] || { ids: [1,2,3,4,5,6,7,8], name: 'Tất cả phòng' };
+    const products = await this.productsService.findRoomStyle(room.ids);
+    return {
+      room: room.name,
+      products,
+    };
   }
 
   @Get(':id')

@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,12 +13,15 @@ import { CartsService } from '../carts/carts.service';
 // import { VouchersService } from '../vouchers/vouchers.service';
 import { generateOrderCode } from '../../utils/generate-code';
 import { ProductsService } from '../products/products.service';
+import { PaymentsService } from '../payments/payments.service';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService,
               private readonly cartsService: CartsService,
               private readonly productsService: ProductsService,
+              @Inject(forwardRef(() => PaymentsService))
+              private readonly paymentService: PaymentsService,
               // private readonly vouchersService: VouchersService
   ) {}
 
@@ -200,12 +210,18 @@ export class OrdersService {
   }
 
   async cancelOrderByUser(id: string, userId: string){
-    const order = await this.prisma.order.findUnique({ where: {id} })
+    const order = await this.prisma.order.findUnique({ where: {id}, include:{Payment: true} })
     if(!order || order.userId !== userId){
       throw new ForbiddenException('Không có quyền hủy đơn này.')
     }
     if(order.status !== 'PROCESSING'){
       throw new BadRequestException('Không thể hủy đơn ở trạng thái hiện tại');
+    }
+
+    const payment = order.Payment;
+    if(!payment)  throw new NotFoundException('ERROR');
+    if (payment.method !== 'vnpay'){
+      await this.paymentService.updateStatus(order.id, 'FAIL');
     }
     return this.prisma.order.update({
       where: {id},
@@ -214,6 +230,18 @@ export class OrdersService {
   }
 
   async updateStatus(orderId: string, updateOrderDto: UpdateOrderDto) {
+    const payment = await this.prisma.payment.findUnique({where: {orderId}})
+    if(!payment)  throw new NotFoundException('ERROR');
+
+    if(updateOrderDto.status === 'CANCELLED'){
+      if (payment.method === 'cod') {
+        await this.paymentService.updateStatus(orderId, 'FAIL');
+      }
+    }else if (updateOrderDto.status === 'DELIVERED'){
+      await this.paymentService.updateStatus(orderId, 'SUCCESS');
+    }else{
+      await this.paymentService.updateStatus(orderId, 'PENDING');
+    }
     return this.prisma.order.update({
       where: {id: orderId},
       data: { status: updateOrderDto.status }

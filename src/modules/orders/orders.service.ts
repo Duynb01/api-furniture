@@ -220,7 +220,7 @@ export class OrdersService {
 
     const payment = order.Payment;
     if(!payment)  throw new NotFoundException('ERROR');
-    if (payment.method !== 'vnpay'){
+    if (payment.method === 'cod'){
       await this.paymentService.updateStatus(order.id, 'FAIL');
     }
     return this.prisma.order.update({
@@ -233,14 +233,14 @@ export class OrdersService {
     const payment = await this.prisma.payment.findUnique({where: {orderId}})
     if(!payment)  throw new NotFoundException('ERROR');
 
-    if(updateOrderDto.status === 'CANCELLED'){
-      if (payment.method === 'cod') {
+    if(payment.method === 'cod'){
+      if(updateOrderDto.status === 'CANCELLED'){
         await this.paymentService.updateStatus(orderId, 'FAIL');
+      }else if (updateOrderDto.status === 'DELIVERED'){
+        await this.paymentService.updateStatus(orderId, 'SUCCESS');
+      }else{
+        await this.paymentService.updateStatus(orderId, 'PENDING');
       }
-    }else if (updateOrderDto.status === 'DELIVERED'){
-      await this.paymentService.updateStatus(orderId, 'SUCCESS');
-    }else{
-      await this.paymentService.updateStatus(orderId, 'PENDING');
     }
     return this.prisma.order.update({
       where: {id: orderId},

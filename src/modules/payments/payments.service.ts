@@ -94,7 +94,6 @@ export class PaymentsService {
         orderId: dto.orderId,
       },
     });
-
     return { url, payment };
   }
 
@@ -118,9 +117,7 @@ export class PaymentsService {
       const rspCode = query['vnp_ResponseCode'];
       const txnRef = query['vnp_TxnRef'];
       const transactionId = query['vnp_TransactionNo'];
-
       const status = rspCode === '00' ? 'SUCCESS' : 'FAILED';
-
       try {
         const payment = await this.prisma.$transaction(async (prisma) => {
           const updatedPayment = await prisma.payment.update({
@@ -133,10 +130,9 @@ export class PaymentsService {
           });
 
           // Nếu thanh toán thất bại và payment chưa SUCCESS, hủy đơn hàng
-          if (rspCode !== '00' && updatedPayment.status !== 'SUCCESS') {
+          if (status === 'FAILED') {
             const order = await prisma.order.findUnique({ where: { id: txnRef } });
             if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng`);
-
             await this.orderService.cancelOrderByUser(txnRef, order.userId);
           }
           return updatedPayment;

@@ -222,6 +222,13 @@ export class OrdersService {
   }
 
    async updateStatus(orderId: string, updateOrderDto: UpdateOrderDto) {
+      if(updateOrderDto.status === 'CANCELLED'){
+        await this.paymentService.updateStatus(orderId, 'FAIL');
+      }else if (updateOrderDto.status === 'DELIVERED'){
+        await this.paymentService.updateStatus(orderId, 'SUCCESS');
+      }else{
+        await this.paymentService.updateStatus(orderId, 'PENDING');
+      }
     return this.prisma.order.update({
       where: {id: orderId},
       data: { status: updateOrderDto.status }

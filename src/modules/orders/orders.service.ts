@@ -214,34 +214,14 @@ export class OrdersService {
     if(!order || order.userId !== userId){
       throw new ForbiddenException('Không có quyền hủy đơn này.')
     }
-    if(order.status !== 'PROCESSING'){
-      throw new BadRequestException('Không thể hủy đơn ở trạng thái hiện tại');
-    }
-
-    const payment = order.Payment;
-    if(!payment)  throw new NotFoundException('ERROR');
-    if (payment.method === 'cod'){
-      await this.paymentService.updateStatus(order.id, 'FAIL');
-    }
+    await this.paymentService.updateStatus(order.id, 'FAIL');
     return this.prisma.order.update({
       where: {id},
       data: {status: 'CANCELLED'}
     })
   }
 
-  async updateStatus(orderId: string, updateOrderDto: UpdateOrderDto) {
-    const payment = await this.prisma.payment.findUnique({where: {orderId}})
-    if(!payment)  throw new NotFoundException('ERROR');
-
-    if(payment.method === 'cod'){
-      if(updateOrderDto.status === 'CANCELLED'){
-        await this.paymentService.updateStatus(orderId, 'FAIL');
-      }else if (updateOrderDto.status === 'DELIVERED'){
-        await this.paymentService.updateStatus(orderId, 'SUCCESS');
-      }else{
-        await this.paymentService.updateStatus(orderId, 'PENDING');
-      }
-    }
+   async updateStatus(orderId: string, updateOrderDto: UpdateOrderDto) {
     return this.prisma.order.update({
       where: {id: orderId},
       data: { status: updateOrderDto.status }

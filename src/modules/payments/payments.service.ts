@@ -118,31 +118,27 @@ export class PaymentsService {
       const txnRef = query['vnp_TxnRef'];
       const transactionId = query['vnp_TransactionNo'];
       const status = rspCode === '00' ? 'SUCCESS' : 'FAILED';
-      try {
-        const payment = await this.prisma.$transaction(async (prisma) => {
-          const updatedPayment = await prisma.payment.update({
-            where: { orderId: txnRef },
-            data: {
-              status,
-              transactionId,
-              paymentTime: new Date(),
-            },
-          });
-
-          // Nếu thanh toán thất bại và payment chưa SUCCESS, hủy đơn hàng
-          if (status === 'FAILED') {
-            const order = await prisma.order.findUnique({ where: { id: txnRef } });
-            if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng`);
-            await this.orderService.cancelOrderByUser(txnRef, order.userId);
-          }
-          return updatedPayment;
+      const payment = await this.prisma.$transaction(async (prisma) => {
+        const updatedPayment = await prisma.payment.update({
+          where: { orderId: txnRef },
+          data: {
+            status,
+            transactionId,
+            paymentTime: new Date(),
+          },
         });
-
-        return { message: 'Thanh toán thành công', payment };
-      } catch (err){
-        console.error(err);
-        throw new BadRequestException('Thanh toán thất bại')
-      }
+        // Nếu thanh toán thất bại và payment chưa SUCCESS, hủy đơn hàng
+        if (status === 'FAILED') {
+          const order = await prisma.order.findUnique({ where: { id: txnRef } });
+          if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng`);
+          await this.orderService.cancelOrderByUser(txnRef, order.userId);
+        }
+        return updatedPayment;
+      });
+        return {
+          message: status === 'SUCCESS' ? 'Thanh toán thành công' : 'Thanh toán thất bại',
+          payment
+        };
     } else {
       throw new BadRequestException('Invalid checksum');
     }

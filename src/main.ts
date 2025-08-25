@@ -8,7 +8,7 @@ import * as process from 'node:process';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: 'https://furniture-store-psi-two.vercel.app',
     credentials: true,
   });
   app.use(cookieParser());

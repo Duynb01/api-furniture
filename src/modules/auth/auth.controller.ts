@@ -70,6 +70,16 @@ export class AuthController {
     return { message: 'Successful', access_token };
   }
 
+  @Post('verify-token')
+  async verifyToken(@Req() request: Request, @Res({passthrough: true}) response: Response){
+  const token = request.cookies.token || request.headers.authorization?.replace('Bearer ', '');    const ipAddress: string = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.socket?.remoteAddress || '';
+    if (!token) {
+      return { message: 'No token provided' };
+    }
+    const role = await this.authService.verifyToken(token);
+    return {role: role}
+  }
+
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   forgotPassword(@Body() dto: ForgotPasswordDto){

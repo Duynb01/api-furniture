@@ -103,6 +103,7 @@ export class AuthController {
       secure: true,
       sameSite: 'none',
       maxAge: 15 * 60 * 1000, // 15 minutes
+      path:'/'
     });
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,

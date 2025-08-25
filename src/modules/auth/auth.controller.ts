@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Req, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Get, UseGuards, HttpCode, HttpStatus, ForbiddenException } from '@nestjs/common';
 import {Response, Request} from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -72,9 +72,9 @@ export class AuthController {
 
   @Post('verify-token')
   async verifyToken(@Req() request: Request, @Res({passthrough: true}) response: Response){
-  const token = request.cookies.token || request.headers.authorization?.replace('Bearer ', '');    const ipAddress: string = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.socket?.remoteAddress || '';
+  const token = request.cookies.token || request.headers.authorization?.replace('Bearer ', '');   
     if (!token) {
-      return { message: 'No token provided' };
+      throw new ForbiddenException('No token provided');
     }
     const role = await this.authService.verifyToken(token);
     return {role: role}

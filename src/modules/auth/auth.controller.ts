@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Req, Get, UseGuards, HttpCode, HttpStatus, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import {Response, Request} from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -68,16 +68,6 @@ export class AuthController {
     const {access_token, refresh_token} = await this.authService.refresh(refreshToken, userAgent, ipAddress);
     await this.saveToken(response, access_token, refresh_token);
     return { message: 'Successful', access_token };
-  }
-
-  @Post('verify-token')
-  async verifyToken(@Req() request: Request, @Res({passthrough: true}) response: Response){
-  const token = request.cookies.token || request.headers.authorization?.replace('Bearer ', '');   
-    if (!token) {
-      throw new ForbiddenException('No token provided');
-    }
-    const role = await this.authService.verifyToken(token);
-    return {role: role}
   }
 
   @Post('forgot-password')

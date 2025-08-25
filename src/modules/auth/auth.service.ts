@@ -13,7 +13,6 @@ import * as process from 'node:process';
 import {v4 as uuidv4} from 'uuid'
 import { MailService } from '../mail/mail.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService {
@@ -285,18 +284,6 @@ export class AuthService {
     return {
       accessToken,
       refreshToken
-    }
-  }
-
-  async verifyToken( token: string ) {
-    try {
-      const decoded = this.jwtService.verify(token);
-      if (!decoded.role) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-      return decoded.role;
-    } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
     }
   }
 }

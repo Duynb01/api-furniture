@@ -133,8 +133,11 @@ export class VouchersService {
       }
     })
     if (!voucher) throw new NotFoundException('Voucher không tồn tại');
-    return this.prisma.voucher.delete({
+    return this.prisma.voucher.update({
       where: { id },
+      data:{
+        active: false
+      }
     });
   }
 

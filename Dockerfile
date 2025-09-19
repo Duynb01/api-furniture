@@ -30,6 +30,6 @@ COPY --from=builder /app/prisma ./prisma
 RUN npx prisma generate
 ENV PORT=3000
 EXPOSE 3000
-CMD npx prisma migrate deploy && npx ts-node prisma/seed.ts && node dist/src/main.js
+CMD ["node", "dist/src/main.js"]
 
 

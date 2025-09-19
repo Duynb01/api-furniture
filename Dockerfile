@@ -30,6 +30,6 @@ COPY --from=builder /app/prisma ./prisma
 RUN npx prisma generate
 ENV PORT=3000
 EXPOSE 3000
-CMD npm run deploy
+CMD ["node", "dist/src/main.js"]
 
 
